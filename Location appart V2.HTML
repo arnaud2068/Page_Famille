@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion de Grille de Loyer - Mountain Collection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; padding: 0; }
+      .container { max-width: 100% !important; width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-4 md:p-8">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- En-tête -->
+    <div class="bg-slate-900 rounded-xl shadow-xl p-6 border-l-8 border-blue-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-800">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl md:text-3xl font-extrabold text-blue-400">MOUNTAIN COLLECTION</h1>
+          <span class="bg-amber-500/20 text-amber-300 text-xs font-semibold px-2.5 py-0.5 rounded border border-amber-500/30">Les Menuires</span>
+        </div>
+        <p class="text-slate-400 text-sm mt-1">
+          Avenant au mandat • Référence lot: <strong class="text-slate-200">MN-VM0811 - VALMONTS A</strong>
+        </p>
+        <p class="text-slate-400 text-xs mt-0.5">M. et Mme BUYLE ET BOON Arnaud et Roxanne</p>
+      </div>
+
+      <!-- Contrôles Saisons -->
+      <div class="no-print flex flex-wrap items-center gap-3 bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Saison active</label>
+          <select id="seasonSelect" onchange="changeSeason(this.value)" class="bg-slate-900 border border-slate-600 rounded-md px-3 py-1.5 text-sm font-semibold text-blue-300 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
+          </select>
+        </div>
+        <button onclick="openNewSeasonModal()" class="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-md text-sm font-medium transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-plus"></i> Nouvelle Saison
+        </button>
+        <button onclick="deleteCurrentSeason()" class="mt-4 md:mt-0 text-red-400 hover:bg-red-900/30 p-2 rounded-md text-sm transition" title="Supprimer la saison courante">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tableau de bord des Totaux (6 Cartes KPI avec thème sombre) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      
+      <!-- Total Recettes Net Officiel -->
+      <div class="bg-slate-900 p-5 rounded-xl shadow-md border border-slate-800">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Recettes Net Agence</span>
+        <div class="text-2xl font-black text-blue-400 mt-1" id="totalRecettes">0,00 €</div>
+        <span class="text-xs text-slate-400" id="countLoue">0 sem. agence</span>
+      </div>
+
+      <!-- Total Loc Black -->
+      <div class="bg-purple-950/60 p-5 rounded-xl shadow-md border border-purple-800/80">
+        <span class="text-xs font-bold text-purple-300 uppercase tracking-wider block">Total Loc Black</span>
+        <div class="text-2xl font-black text-purple-300 mt-1" id="totalBlack">0,00 €</div>
+        <span class="text-xs text-purple-300/80" id="countBlack">0 sem. en Loc Black</span>
+      </div>
+
+      <!-- COMPTEUR CUMULÉ (OFFICIEL + BLACK) -->
+      <div class="bg-emerald-950/80 p-5 rounded-xl shadow-md border border-emerald-700/80">
+        <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider block">Grand Total Cumulé</span>
+        <div class="text-2xl font-black text-emerald-400 mt-1" id="grandTotalRecettes">0,00 €</div>
+        <span class="text-xs text-emerald-300/80">Net Agence + Loc Black</span>
+      </div>
+
+      <!-- Commission Agence -->
+      <div class="bg-slate-900 p-5 rounded-xl shadow-md border border-slate-800">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Frais / Commission Agence</span>
+        <div class="text-2xl font-black text-rose-400 mt-1" id="totalFrais">0,00 €</div>
+        <span class="text-xs text-slate-400" id="avgFraisPct">0,00 % commission</span>
+      </div>
+
+      <!-- Occupations Perso -->
+      <div class="bg-slate-900 p-5 rounded-xl shadow-md border border-slate-800">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Occupations Perso</span>
+        <div class="text-2xl font-black text-amber-400 mt-1" id="countPerso">0</div>
+        <span class="text-xs text-slate-400">sans incidence fin.</span>
+      </div>
+
+      <!-- Brut Public -->
+      <div class="bg-slate-900 p-5 rounded-xl shadow-md border border-slate-800">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Loyer Brut (Loué)</span>
+        <div class="text-2xl font-black text-amber-300 mt-1" id="totalBrutLoue">0,00 €</div>
+        <span class="text-xs text-slate-400" id="countTotal">Prix public total</span>
+      </div>
+    </div>
+
+    <!-- Tableau principal sombre -->
+    <div class="bg-slate-900 rounded-xl shadow-xl overflow-hidden border border-slate-800">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs md:text-sm">
+          <thead>
+            <tr class="bg-slate-800/90 text-slate-200 uppercase font-semibold tracking-wider text-[11px] border-b border-slate-700">
+              <th class="p-3 text-center w-10">Loué</th>
+              <th class="p-3">Semaines / Périodes</th>
+              <th class="p-3 text-right">Loyer Brut</th>
+              <th class="p-3 text-right">Net Prop.</th>
+              <th class="p-3 text-center">Perso</th>
+              <th class="p-3 text-center">Prest. Ext.</th>
+              <th class="p-3 text-right bg-blue-950/60 text-blue-200">Montant Perçu</th>
+              <th class="p-3 text-right bg-rose-950/60 text-rose-300">Écart / Frais</th>
+              <th class="p-3 text-center bg-purple-950/80 text-purple-200 font-bold border-l-2 border-purple-500">Loc Black</th>
+              <th class="p-3 text-center no-print">Contrat</th>
+              <th class="p-3 text-center no-print w-10">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-800 text-slate-300">
+            <!-- Rempli en JS -->
+          </tbody>
+          <tfoot>
+            <tr class="bg-slate-950 text-white font-bold text-sm border-t border-slate-800">
+              <td colspan="2" class="p-4">TOTAL GENERAL</td>
+              <td class="p-4 text-right text-slate-400 font-normal" id="footBrut">0,00 €</td>
+              <td class="p-4 text-right text-slate-400 font-normal" id="footNet">0,00 €</td>
+              <td colspan="2"></td>
+              <td class="p-4 text-right text-blue-400 text-base" id="footPerçu">0,00 €</td>
+              <td class="p-4 text-right text-rose-400" id="footFrais">0,00 €</td>
+              <td class="p-4 text-center text-purple-300 text-base font-black border-l-2 border-purple-500 bg-purple-950/60" id="footBlack">0,00 €</td>
+              <td class="no-print" colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <!-- Bouton d'ajout de ligne -->
+      <div class="p-4 bg-slate-900 border-t border-slate-800 no-print">
+        <button onclick="addNewRow()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-plus"></i> Ajouter une ligne
+        </button>
+      </div>
+    </div>
+
+    <!-- Remarques & Légende -->
+    <div class="bg-slate-900 p-4 rounded-lg shadow-sm border border-slate-800 text-xs text-slate-400 space-y-1">
+      <p><strong>Remarque :</strong> Le fond sombre améliore le contraste. La carte verte <em>Grand Total Cumulé</em> récapitule l'ensemble de vos revenus nets (Net Agence + Loc Black).</p>
+    </div>
+
+  </div>
+
+  <!-- Modal Nouvelle Saison -->
+  <div id="seasonModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4 text-slate-100">
+      <h3 class="text-xl font-bold text-slate-100">Créer une nouvelle saison</h3>
+      
+      <div>
+        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nom de la saison</label>
+        <input type="text" id="newSeasonName" placeholder="Ex: 2027-2028" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Évolution du Loyer Brut (%)</label>
+        <input type="number" id="newSeasonIncrease" value="0" step="0.5" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <span class="text-xs text-slate-400">Applique un ajustement sur le loyer brut. Le Net sera calculé automatiquement avec -30%.</span>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeNewSeasonModal()" class="px-4 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800">Annuler</button>
+        <button onclick="confirmNewSeason()" class="px-4 py-2 rounded-md text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium">Créer la saison</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const initialWeeks = [
+      { id: 1, week: "05/12/2026 - 12/12/2026", brut: 719.00, net: 517.68 },
+      { id: 2, week: "12/12/2026 - 19/12/2026", brut: 719.00, net: 517.68 },
+      { id: 3, week: "19/12/2026 - 26/12/2026", brut: 1357.00, net: 977.04 },
+      { id: 4, week: "26/12/2026 - 02/01/2027", brut: 1756.00, net: 1264.32 },
+      { id: 5, week: "02/01/2027 - 09/01/2027", brut: 798.00, net: 574.56 },
+      { id: 6, week: "09/01/2027 - 16/01/2027", brut: 878.00, net: 632.16 },
+      { id: 7, week: "16/01/2027 - 23/01/2027", brut: 958.00, net: 689.76 },
+      { id: 8, week: "23/01/2027 - 30/01/2027", brut: 1038.00, net: 747.36 },
+      { id: 9, week: "30/01/2027 - 06/02/2027", brut: 1277.00, net: 919.44 },
+      { id: 10, week: "06/02/2027 - 13/02/2027", brut: 1596.00, net: 1149.12 },
+      { id: 11, week: "13/02/2027 - 20/02/2027", brut: 1676.00, net: 1206.72 },
+      { id: 12, week: "20/02/2027 - 27/02/2027", brut: 1676.00, net: 1206.72 },
+      { id: 13, week: "27/02/2027 - 06/03/2027", brut: 1676.00, net: 1206.72 },
+      { id: 14, week: "06/03/2027 - 13/03/2027", brut: 1277.00, net: 919.44 },
+      { id: 15, week: "13/03/2027 - 20/03/2027", brut: 1038.00, net: 747.36 },
+      { id: 16, week: "20/03/2027 - 27/03/2027", brut: 958.00, net: 689.76 },
+      { id: 17, week: "27/03/2027 - 03/04/2027", brut: 878.00, net: 632.16 },
+      { id: 18, week: "03/04/2027 - 10/04/2027", brut: 878.00, net: 632.16 },
+      { id: 19, week: "10/04/2027 - 17/04/2027", brut: 798.00, net: 574.56 },
+      { id: 20, week: "17/04/2027 - 24/04/2027", brut: 798.00, net: 574.56 }
+    ];
+
+    let store = JSON.parse(localStorage.getItem('mountain_rent_store')) || {
+      currentSeason: "2026-2027",
+      seasons: {
+        "2026-2027": initialWeeks.map(item => ({
+          ...item,
+          isRented: false,
+          isPerso: false,
+          isCustom: false,
+          customAmount: item.net,
+          isBlack: false,
+          blackAmount: 0,
+          fileName: null
+        }))
+      }
+    };
+
+    function saveStore() {
+      localStorage.setItem('mountain_rent_store', JSON.stringify(store));
+    }
+
+    function formatEuro(val) {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val || 0);
+    }
+
+    function init() {
+      renderSeasonSelect();
+      renderTable();
+    }
+
+    function renderSeasonSelect() {
+      const select = document.getElementById('seasonSelect');
+      select.innerHTML = '';
+      Object.keys(store.seasons).forEach(seasonKey => {
+        const option = document.createElement('option');
+        option.value = seasonKey;
+        option.textContent = `Saison ${seasonKey}`;
+        if (seasonKey === store.currentSeason) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function changeSeason(seasonName) {
+      store.currentSeason = seasonName;
+      saveStore();
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      const items = store.seasons[store.currentSeason] || [];
+
+      let sumBrut = 0;
+      let sumNet = 0;
+      let sumPerçu = 0;
+      let sumFrais = 0;
+      let sumBlack = 0;
+      let countBlack = 0;
+      let sumBrutLoue = 0;
+      let countLoue = 0;
+      let countPerso = 0;
+
+      items.forEach((row, index) => {
+        sumBrut += row.brut;
+        sumNet += row.net;
+
+        if (row.isPerso) countPerso++;
+
+        let effectiveAmount = row.isCustom ? (parseFloat(row.customAmount) || 0) : row.net;
+        let blackVal = parseFloat(row.blackAmount) || 0;
+
+        // Calcul Loc Black
+        if (row.isBlack) {
+          sumBlack += blackVal;
+          countBlack++;
+        }
+
+        let amountPerçu = 0;
+        let diffFrais = 0;
+        let fraisPct = 0;
+
+        // Si Loc Black ou Occupation Personnelle est cochée, les calculs officiels d'agence sont désactivés
+        if (row.isRented && !row.isPerso && !row.isBlack) {
+          amountPerçu = effectiveAmount;
+          sumPerçu += amountPerçu;
+          countLoue++;
+          sumBrutLoue += row.brut;
+
+          diffFrais = row.brut - effectiveAmount;
+          fraisPct = row.brut > 0 ? (diffFrais / row.brut) * 100 : 0;
+          sumFrais += diffFrais;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = row.isBlack 
+          ? 'bg-purple-950/40 border-l-4 border-l-purple-500' 
+          : (row.isPerso ? 'bg-amber-950/30 text-slate-500' : (row.isRented ? 'bg-blue-950/30' : 'hover:bg-slate-800/50'));
+
+        tr.innerHTML = `
+          <!-- Loué (Désactivé si Loc Black ou Perso) -->
+          <td class="p-3 text-center">
+            <input type="checkbox" ${row.isRented ? 'checked' : ''} ${row.isPerso || row.isBlack ? 'disabled' : ''} 
+              onchange="updateRow(${index}, 'isRented', this.checked)" class="w-4 h-4 text-blue-600 rounded border-slate-600 bg-slate-900 focus:ring-blue-500">
+          </td>
+
+          <!-- Libellé de la semaine (Modifiable) -->
+          <td class="p-3 font-medium ${row.isPerso ? 'line-through text-slate-500' : (row.isBlack ? 'text-purple-300 font-semibold' : 'text-slate-200')}">
+            <input type="text" value="${row.week || ''}" placeholder="Période..." onchange="updateRow(${index}, 'week', this.value)"
+              class="w-full bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 focus:outline-none text-xs md:text-sm font-medium">
+            ${row.isBlack ? '<span class="inline-block mt-1 text-[10px] bg-purple-900/80 text-purple-200 border border-purple-500/50 px-1.5 py-0.5 rounded font-bold uppercase">Loc Black</span>' : ''}
+          </td>
+
+          <!-- Loyer Brut (Modifiable) -->
+          <td class="p-3 text-right">
+            <input type="number" value="${row.brut}" onchange="updateBrutRow(${index}, parseFloat(this.value)||0)"
+              class="w-20 bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 focus:outline-none text-right text-slate-400"> €
+          </td>
+
+          <!-- Net Propriétaire (Modifiable) -->
+          <td class="p-3 text-right">
+            <input type="number" value="${row.net}" onchange="updateRow(${index}, 'net', parseFloat(this.value)||0)"
+              class="w-20 bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 focus:outline-none text-right font-semibold text-slate-300"> €
+          </td>
+
+          <!-- Option Occupation Personnelle (Désactivé si Loc Black) -->
+          <td class="p-3 text-center">
+            <input type="checkbox" ${row.isPerso ? 'checked' : ''} ${row.isBlack ? 'disabled' : ''}
+              onchange="updateRow(${index}, 'isPerso', this.checked)" class="w-4 h-4 text-amber-500 rounded border-slate-600 bg-slate-900 focus:ring-amber-500" title="Occupation personnelle (non loué)">
+          </td>
+
+          <!-- Option Prestataire / Saisie libre (Désactivé si Loc Black) -->
+          <td class="p-3 text-center">
+            <div class="flex items-center justify-center gap-1">
+              <input type="checkbox" ${row.isCustom ? 'checked' : ''} ${row.isPerso || !row.isRented || row.isBlack ? 'disabled' : ''} 
+                onchange="updateRow(${index}, 'isCustom', this.checked)" class="w-4 h-4 text-purple-500 rounded border-slate-600 bg-slate-900 focus:ring-purple-500">
+              ${row.isCustom && row.isRented && !row.isPerso && !row.isBlack ? `
+                <input type="number" value="${row.customAmount}" onchange="updateRow(${index}, 'customAmount', parseFloat(this.value)||0)"
+                  class="w-20 bg-slate-950 border border-purple-500/50 rounded px-1 py-0.5 text-right text-xs text-purple-200 font-bold focus:outline-none focus:ring-1 focus:ring-purple-500">
+              ` : ''}
+            </div>
+          </td>
+
+          <!-- Col Montant Perçu Officiel -->
+          <td class="p-3 text-right font-bold text-blue-400 bg-blue-950/20">
+            ${amountPerçu > 0 ? formatEuro(amountPerçu) : '-'}
+          </td>
+
+          <!-- Col Écart / Frais Agence -->
+          <td class="p-3 text-right font-semibold text-rose-400 bg-rose-950/20">
+            ${row.isRented && !row.isPerso && !row.isBlack ? `
+              <div>${formatEuro(diffFrais)}</div>
+              <div class="text-[10px] text-rose-400/70 font-normal">(${fraisPct.toFixed(1)}%)</div>
+            ` : '-'}
+          </td>
+
+          <!-- Col Loc Black avec Case à cocher + Champ Montant -->
+          <td class="p-3 bg-purple-950/30 border-l-2 border-purple-700/60">
+            <div class="flex items-center justify-center gap-2">
+              <input type="checkbox" ${row.isBlack ? 'checked' : ''} 
+                onchange="updateRow(${index}, 'isBlack', this.checked)" 
+                class="w-4 h-4 text-purple-500 rounded border-purple-500 bg-slate-900 focus:ring-purple-500" title="Cocher pour passer cette semaine en Loc Black (désactive les autres calculs)">
+              
+              ${row.isBlack ? `
+                <input type="number" value="${row.blackAmount || ''}" placeholder="Montant €" 
+                  onchange="updateRow(${index}, 'blackAmount', parseFloat(this.value)||0)"
+                  class="w-24 bg-slate-950 border border-purple-500/60 rounded px-2 py-1 text-right text-xs text-purple-200 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
+              ` : '<span class="text-[11px] text-purple-400/50 italic">Désactivé</span>'}
+            </div>
+          </td>
+
+          <!-- Fichier / Contrat -->
+          <td class="p-3 text-center no-print">
+            <label class="cursor-pointer inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-300 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded border border-slate-700 transition">
+              <i class="fa-solid ${row.fileName ? 'fa-file-pdf text-red-400' : 'fa-paperclip'}"></i>
+              <span class="max-w-[70px] truncate">${row.fileName || 'Joindre'}</span>
+              <input type="file" class="hidden" onchange="handleFileUpload(${index}, this)">
+            </label>
+          </td>
+
+          <!-- Action Supprimer Ligne -->
+          <td class="p-3 text-center no-print">
+            <button onclick="deleteRow(${index})" class="text-rose-400 hover:text-rose-300 hover:bg-rose-900/30 p-1.5 rounded transition" title="Supprimer la ligne">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      // Totaux
+      document.getElementById('totalRecettes').textContent = formatEuro(sumPerçu);
+      document.getElementById('countLoue').textContent = `${countLoue} sem. agence`;
+
+      document.getElementById('totalFrais').textContent = formatEuro(sumFrais);
+      const globalFraisPct = sumBrutLoue > 0 ? (sumFrais / sumBrutLoue) * 100 : 0;
+      document.getElementById('avgFraisPct').textContent = `${globalFraisPct.toFixed(1)}% commission`;
+
+      document.getElementById('totalBlack').textContent = formatEuro(sumBlack);
+      document.getElementById('countBlack').textContent = `${countBlack} sem. en Loc Black`;
+
+      // CUMUL GLOBAL (NET AGENCE + LOC BLACK)
+      const grandTotal = sumPerçu + sumBlack;
+      document.getElementById('grandTotalRecettes').textContent = formatEuro(grandTotal);
+
+      document.getElementById('countPerso').textContent = countPerso;
+
+      document.getElementById('totalBrutLoue').textContent = formatEuro(sumBrutLoue);
+
+      document.getElementById('footBrut').textContent = formatEuro(sumBrut);
+      document.getElementById('footNet').textContent = formatEuro(sumNet);
+      document.getElementById('footPerçu').textContent = formatEuro(sumPerçu);
+      document.getElementById('footFrais').textContent = formatEuro(sumFrais);
+      document.getElementById('footBlack').textContent = formatEuro(sumBlack);
+    }
+
+    function updateRow(index, key, value) {
+      const items = store.seasons[store.currentSeason];
+      items[index][key] = value;
+
+      if (key === 'isBlack' && value) {
+        items[index].isRented = false;
+        items[index].isPerso = false;
+      }
+
+      if (key === 'isPerso' && value) {
+        items[index].isRented = false;
+        items[index].isBlack = false;
+      }
+
+      saveStore();
+      renderTable();
+    }
+
+    function updateBrutRow(index, brutVal) {
+      const items = store.seasons[store.currentSeason];
+      items[index].brut = brutVal;
+      // Recalcul automatique du Net (-30%) si custom log n'est pas personnalisé
+      items[index].net = Math.round((brutVal * 0.70) * 100) / 100;
+      if(!items[index].isCustom) {
+        items[index].customAmount = items[index].net;
+      }
+      saveStore();
+      renderTable();
+    }
+
+    function addNewRow() {
+      const items = store.seasons[store.currentSeason] || [];
+      const newId = items.length ? Math.max(...items.map(i => i.id || 0)) + 1 : 1;
+      
+      items.push({
+        id: newId,
+        week: "Nouvelle période",
+        brut: 0,
+        net: 0,
+        isRented: false,
+        isPerso: false,
+        isCustom: false,
+        customAmount: 0,
+        isBlack: false,
+        blackAmount: 0,
+        fileName: null
+      });
+
+      saveStore();
+      renderTable();
+    }
+
+    function deleteRow(index) {
+      const items = store.seasons[store.currentSeason];
+      if (confirm("Voulez-vous vraiment supprimer cette ligne ?")) {
+        items.splice(index, 1);
+        saveStore();
+        renderTable();
+      }
+    }
+
+    function handleFileUpload(index, input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        store.seasons[store.currentSeason][index].fileName = file.name;
+        saveStore();
+        renderTable();
+      }
+    }
+
+    function openNewSeasonModal() {
+      document.getElementById('seasonModal').classList.remove('hidden');
+    }
+
+    function closeNewSeasonModal() {
+      document.getElementById('seasonModal').classList.add('hidden');
+    }
+
+    function shiftYear(dateStr, yearsToAdd) {
+      return dateStr.replace(/\d{4}/g, year => parseInt(year, 10) + yearsToAdd);
+    }
+
+    function confirmNewSeason() {
+      const seasonName = document.getElementById('newSeasonName').value.trim();
+      const increasePct = parseFloat(document.getElementById('newSeasonIncrease').value) || 0;
+
+      if (!seasonName) {
+        alert("Veuillez saisir un nom de saison (ex: 2027-2028).");
+        return;
+      }
+
+      if (store.seasons[seasonName]) {
+        alert("Cette saison existe déjà.");
+        return;
+      }
+
+      const currentItems = store.seasons[store.currentSeason] || initialWeeks;
+      const brutFactor = 1 + (increasePct / 100);
+
+      const newItems = currentItems.map(item => {
+        const newBrut = Math.round(item.brut * brutFactor * 100) / 100;
+        const newNet = Math.round((newBrut * 0.70) * 100) / 100;
+
+        return {
+          ...item,
+          week: shiftYear(item.week, 1),
+          brut: newBrut,
+          net: newNet,
+          isRented: false,
+          isPerso: false,
+          isCustom: false,
+          customAmount: newNet,
+          isBlack: false,
+          blackAmount: 0,
+          fileName: null
+        };
+      });
+
+      store.seasons[seasonName] = newItems;
+      store.currentSeason = seasonName;
+      saveStore();
+
+      closeNewSeasonModal();
+      renderSeasonSelect();
+      renderTable();
+    }
+
+    function deleteCurrentSeason() {
+      const keys = Object.keys(store.seasons);
+      if (keys.length <= 1) {
+        alert("Impossible de supprimer la seule saison existante.");
+        return;
+      }
+
+      if (confirm(`Voulez-vous vraiment supprimer la saison ${store.currentSeason} ?`)) {
+        delete store.seasons[store.currentSeason];
+        store.currentSeason = Object.keys(store.seasons)[0];
+        saveStore();
+        renderSeasonSelect();
+        renderTable();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
